@@ -8,4 +8,4 @@ The general preprocessing and model fitting workflow is as follows:
 
 1. Generate pre-processed CSVs from the raw MegaIntensionality data by running the MegaIntensionality Preprocessing Notebook.
 2. Start a new session in the R terminal (preferably inside a terminal multiplexer, such as [tmux](https://github.com/tmux/tmux) or [screen](https://www.gnu.org/software/screen/), as model fitting will take a long time).
-3. From the R terminal, source `preprocess_and_run.r`, which performs further transformations on the preprocessed data and fits the model.
+3. From the R terminal, source `preprocess_and_fit.r`, which performs further transformations on the preprocessed data and fits the model.

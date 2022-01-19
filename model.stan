@@ -1,5 +1,5 @@
 data {
-    // NOTE: role and participant have not yet been incorporated
+    // TODO: incorporate participant, role effects
 
     // global data (values shared across at least two datasets)
     int<lower=1> N_verb;
@@ -17,7 +17,7 @@ data {
     int<lower=1> N_templatic;
     vector[N_templatic] y_t;
     int<lower=1, upper=N_verb> verb_t[N_templatic];
-    int<lower=0, upper=N_polarity_tense> polarity_tense_t[N_templatic];
+    int<lower=1, upper=N_polarity_tense> polarity_tense_t[N_templatic];
     matrix<lower=0, upper=1>[N_templatic, N_polarity_tense] polarity_tense_mat_t;
     int<lower=1, upper=N_participant> participant_t[N_templatic];
     
@@ -26,10 +26,11 @@ data {
     vector[N_contentful] y_c;
     int<lower=1, upper=N_scenario> scenario_c[N_contentful];
     int<lower=1, upper=N_verb> verb_c[N_contentful];
-    int<lower=0, upper=N_polarity_tense> polarity_tense_c[N_templatic];
+    int<lower=1, upper=N_polarity_tense> polarity_tense_c[N_contentful];
     matrix<lower=0, upper=1>[N_contentful, N_polarity_tense] polarity_tense_mat_c;
     int<lower=1, upper=N_participant> participant_c[N_contentful];
 }
+
 parameters {
 
     //
@@ -83,12 +84,18 @@ transformed parameters {
     vector[N_contentful] mu_c;
     vector[N_contentful] prec_c;
 
+    // means and covariances for random effects hyperpriors
+    cov_matrix[N_polarity_tense] Sigma_B_v;
+    cov_matrix[N_polarity_tense] Sigma_B_s;
+    row_vector[N_polarity_tense] mu_B_v;
+    row_vector[N_polarity_tense] mu_B_s;
+
     //
     // NORMING
     //
 
     for (i in 1:N_norming) {
-        // - by-scenario random intercept
+        // - by-scenario random intercepts
         mu_n[i] = inv_logit(B_s[scenario_n[i]][1]);
     };
     prec_n = exp(rep_vector(B0_prec, N_norming));
@@ -96,9 +103,10 @@ transformed parameters {
     //
     // TEMPLATIC VALIDATION
     //
+
     for (i in 1:N_templatic) {
         // - polarity*tense fixed effects
-        // - by-verb random intercepts, slopes for polarity*tense
+        // - by-verb random intercepts + slopes for polarity*tense
         mu_t[i] = inv_logit(B_pt_mu[polarity_tense_t[i]] + 
                             polarity_tense_mat_t[i] * B_v[verb_t[i]]);
     }
@@ -107,15 +115,25 @@ transformed parameters {
     //
     // CONTENTFUL VALIDATION
     //
+
     for (i in 1:N_contentful) {
         // - polarity*tense fixed effects
-        // - by-verb random intercepts, slopes for polarity*tense
+        // - by-verb random intercepts + slopes for polarity*tense
         // - by-scenario random intercepts, slopes for polarity*tense
         mu_c[i] = inv_logit(B_pt_mu[polarity_tense_c[i]] + 
                             polarity_tense_mat_c[i] * B_v[verb_c[i]] + 
                             polarity_tense_mat_c[i] * B_s[scenario_c[i]]);
     }
     prec_c = exp(rep_vector(B0_prec, N_contentful));
+
+    //
+    // RANDOM EFFECTS HYPERPRIOR PARAMS
+    // 
+
+    Sigma_B_v = quad_form_diag(Omega_B_v, tau_B_v);
+    Sigma_B_s = quad_form_diag(Omega_B_s, tau_B_s);
+    mu_B_v = rep_row_vector(0, N_polarity_tense);
+    mu_B_s = rep_row_vector(0, N_polarity_tense);
 }
 
 
@@ -141,8 +159,8 @@ model {
     //
 
     // We enforce that by-scenario and by-verb random ints+slopes be zero-centered
-    B_s ~ multi_normal(rep_row_vector(0, N_polarity_tense), quad_form_diag(Omega_B_v, tau_B_v));
-    B_v ~ multi_normal(rep_row_vector(0, N_polarity_tense), quad_form_diag(Omega_B_s, tau_B_s));
+    B_s ~ multi_normal(mu_B_s, Sigma_B_s);
+    B_v ~ multi_normal(mu_B_v, Sigma_B_v);
 
     //
     // RANDOM EFFECTS HYPERPRIORS
@@ -155,4 +173,3 @@ model {
     tau_B_s ~ cauchy(0, 2.5);
     Omega_B_s ~ lkj_corr(1);
 }
-

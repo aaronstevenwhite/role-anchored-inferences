@@ -20,7 +20,6 @@ N_templatic <- nrow(w_t);
 N_contentful <- nrow(w_c);
 
 # Norming data
-N_norming.w <- nrow(w_n);
 y_n.w <- w_n$response;
 scenario_n.w <- as.integer(as.factor(w_n$scenario));
 participant_n.w <- as.integer(as.factor(w_n$participant));
@@ -74,12 +73,13 @@ options(mc.cores = parallel::detectCores());
 rstan_options(auto_write = TRUE);
 
 # Fit the model
-model_name <- "model.new.stan";
+model_name <- "model.stan";
 fit <- stan(file = model_name,
             data = data.w,
             open_progress = TRUE,
             refresh = 20,
             verbose = TRUE,
-            diagnostic_file = paste(model_name, ".diagnostic"),
-            iter = 2000
+            diagnostic_file = paste(model_name, ".diagnostic", sep=""),
+            seed = 1337,
+            iter = 5000
 );
