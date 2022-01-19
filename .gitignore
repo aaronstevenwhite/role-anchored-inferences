@@ -1,0 +1,20 @@
+# compiled Stan models
+*.rds
+
+# R and Rstudio stuff
+.R*
+*.Rproj
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Mac
+.DS_Store
+
+# Only code to *generate* CSVs should be under version control;
+# not the CSVs themselves
+*.csv
+
+# Unzipped MegaIntensionality datasets
+mega-intensionality-norming-v1/
+mega-intensionality-validation-v1/
