@@ -73,7 +73,7 @@ options(mc.cores = parallel::detectCores());
 rstan_options(auto_write = TRUE);
 
 # Fit the model
-model_name <- "model.stan";
+model_name <- "model.participant.stan";
 fit <- stan(file = model_name,
             data = data.w,
             open_progress = TRUE,
@@ -81,5 +81,5 @@ fit <- stan(file = model_name,
             verbose = TRUE,
             diagnostic_file = paste(model_name, ".diagnostic", sep=""),
             seed = 1337,
-            iter = 5000
+            iter = 8000
 );
