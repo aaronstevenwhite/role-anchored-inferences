@@ -195,6 +195,12 @@ model {
 }
 
 generated quantities {
+    // log likelihoods (needed for WAIC/PSIS calculations)
+    vector[N_norming] ll_n;
+    vector[N_contentful] ll_c;
+    vector[N_templatic] ll_t;
+    vector[N_norming + N_contentful + N_templatic] ll_all;
+
     // covariance matrices for by-scenario and by-verb random effects
     cov_matrix[N_polarity_tense] Sigma_B_v;
     cov_matrix[N_polarity_tense] Sigma_B_s;
@@ -261,4 +267,15 @@ generated quantities {
     prec_c_sd = sd(prec_c);
     mu_t_sd = sd(mu_t);
     prec_t_sd = sd(prec_t);
+
+    for (i in 1:N_norming) {
+        ll_n[i] = beta_lpdf(y_n[i] | alpha_n[i], beta_n[i]);
+    }
+    for (i in 1:N_contentful) {
+        ll_c[i] = beta_lpdf(y_c[i] | alpha_c[i], beta_c[i]);
+    }
+    for (i in 1:N_templatic) {
+        ll_t[i] = beta_lpdf(y_t[i] | alpha_t[i], beta_t[i]);
+    }
+    ll_all = append_row(ll_n, append_row(ll_c, ll_t));
 }

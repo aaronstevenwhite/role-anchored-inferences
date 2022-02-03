@@ -1,4 +1,8 @@
 data {
+    // This model differs from model.participant.stan only in
+    // its omission of by-scenario random slopes (that is, it
+    // has only by-scenario random intercepts)
+
     // global data (values shared across at least two datasets)
     int<lower=1> N_verb;
     int<lower=1> N_scenario;
@@ -39,71 +43,84 @@ parameters {
     vector[N_polarity_tense] B_pt_mu;
 
     // single fixed effect for Beta precision
-    real<lower=0> B0_prec;
+    real B0_prec;
 
     //
-    // RANDOM EFFECTS PARAMETERS
+    // RANDOM EFFECTS AND HYPERPRIORS
     //
 
-    // corr_matrix[N_polarity_tense] Omega_B_v;
+    // by-participant random intercepts for the precision
+    vector[N_participant] B0_p;
+
+    // by-scenario random intercepts for the mean
+    vector[N_scenario] B0_s;
+
+    // standard deviation for by-participant random
+    // intercepts for precision
+    real<lower=0> B0p_sigma;
+
+    // standard deviation for by-participant random
+    // intercepts for the mean
+    real<lower=0> B0s_sigma;
+
     matrix[N_polarity_tense, N_verb] z_B_v;
     cholesky_factor_corr[N_polarity_tense] L_Omega_B_v;
 
-    // corr_matrix[N_polarity_tense] Omega_B_s;
-    matrix[N_polarity_tense, N_scenario] z_B_s;
-    cholesky_factor_corr[N_polarity_tense] L_Omega_B_s;
+    matrix[N_polarity_tense, N_participant] z_B_p;
+    cholesky_factor_corr[N_polarity_tense] L_Omega_B_p;
 
-    // vector[N_polarity_tense] tau_B_v;
     vector<lower = 0, upper = pi()/2>[N_polarity_tense] tau_B_v_unif;
-
-    // vector[N_polarity_tense] tau_B_s;
-    vector<lower = 0, upper = pi()/2>[N_polarity_tense] tau_B_s_unif;
+    vector<lower = 0, upper = pi()/2>[N_polarity_tense] tau_B_p_unif;
 }
 
 transformed parameters {
     // beta parameters
-    vector[N_norming] alpha_n;
-    vector[N_norming] beta_n;
-    vector[N_templatic] alpha_t;
-    vector[N_templatic] beta_t;
-    vector[N_contentful] alpha_c;
-    vector[N_contentful] beta_c;
+    vector<lower=0>[N_norming] alpha_n;
+    vector<lower=0>[N_norming] beta_n;
+    vector<lower=0>[N_templatic] alpha_t;
+    vector<lower=0>[N_templatic] beta_t;
+    vector<lower=0>[N_contentful] alpha_c;
+    vector<lower=0>[N_contentful] beta_c;
 
     // mean, precision parameters for betas
-    vector[N_norming] mu_n;
-    vector[N_templatic] mu_t;
-    vector[N_contentful] mu_c;
+    vector<lower=0, upper=1>[N_norming] mu_n;
+    vector<lower=0>[N_norming] prec_n;
+    vector<lower=0, upper=1>[N_templatic] mu_t;
+    vector<lower=0>[N_templatic] prec_t;
+    vector<lower=0, upper=1>[N_contentful] mu_c;
+    vector<lower=0>[N_contentful] prec_c;
 
     // by-verb random intercepts + slopes for polarity*tense
     // (intercept first)
     matrix[N_polarity_tense, N_verb] B_v;
 
-    // by-scenario random intercepts + slopes for polarity*tense
-    // (intercept first)
-    matrix[N_polarity_tense, N_scenario] B_s;
+    // by-participant random intercepts + slopes for polarity*tense
+    // for the mean, mu (intercept first)
+    matrix[N_polarity_tense, N_participant] B_p;
 
     // scale vectors for by-verb and by-scenario random effects
     vector[N_polarity_tense] tau_B_v;
-    vector[N_polarity_tense] tau_B_s;
+    vector[N_polarity_tense] tau_B_p;
 
     tau_B_v = 2.5 * tan(tau_B_v_unif); // tau_B_v ~ cauchy(0, 2.5)
-    tau_B_s = 2.5 * tan(tau_B_s_unif); // tau_B_s ~ cauchy(0, 2.5)
+    tau_B_p = 2.5 * tan(tau_B_p_unif); // tau_B_p ~ cauchy(0, 2.5)
 
     // B_V ~ multi_normal(0, Sigma)
     // Sigma = diag(tau) * Omega * diag(tau)
     // Omega = L_Omega * L_Omega^T
     B_v = diag_pre_multiply(tau_B_v, L_Omega_B_v) * z_B_v; 
-    B_s = diag_pre_multiply(tau_B_s, L_Omega_B_s) * z_B_s;
+    B_p = diag_pre_multiply(tau_B_p, L_Omega_B_p) * z_B_p;
 
     //
     // NORMING
     //
     for (i in 1:N_norming) {
         // - by-scenario random intercepts
-        mu_n[i] = inv_logit(B_s[1, scenario_n[i]]);
+        mu_n[i] = inv_logit(B0_s[scenario_n[i]]); 
+        prec_n[i] = exp(B0_prec + B0_p[participant_n[i]]);
     };
-    alpha_n = mu_n * exp(B0_prec);
-    beta_n = (1 - mu_n) * exp(B0_prec);
+    alpha_n = mu_n .* prec_n;
+    beta_n = (1 - mu_n) .* prec_n;
 
     //
     // TEMPLATIC VALIDATION
@@ -112,10 +129,12 @@ transformed parameters {
         // - polarity*tense fixed effects
         // - by-verb random intercepts + slopes for polarity*tense
         mu_t[i] = inv_logit(B_pt_mu[polarity_tense_t[i]] + 
-                            polarity_tense_mat_t[i, ] * B_v[, verb_t[i]]);
+                            polarity_tense_mat_t[i, ] * B_v[, verb_t[i]] +
+                            polarity_tense_mat_t[i, ] * B_p[, participant_t[i]]);
+        prec_t[i] = exp(B0_prec + B0_p[participant_t[i]]);
     }
-    alpha_t = mu_t * exp(B0_prec);
-    beta_t = (1 - mu_t) * exp(B0_prec);
+    alpha_t = mu_t .* prec_t;
+    beta_t = (1 - mu_t) .* prec_t;
 
     //
     // CONTENTFUL VALIDATION
@@ -123,13 +142,15 @@ transformed parameters {
     for (i in 1:N_contentful) {
         // - polarity*tense fixed effects
         // - by-verb random intercepts + slopes for polarity*tense
-        // - by-scenario random intercepts, slopes for polarity*tense
+        // - by-scenario random intercepts
         mu_c[i] = inv_logit(B_pt_mu[polarity_tense_c[i]] + 
+                            B0_s[scenario_c[i]] + 
                             polarity_tense_mat_c[i, ] * B_v[, verb_c[i]] + 
-                            polarity_tense_mat_c[i, ] * B_s[, scenario_c[i]]);
+                            polarity_tense_mat_c[i, ] * B_p[, participant_c[i]]);
+        prec_c[i] = exp(B0_prec + B0_p[participant_c[i]]);
     }
-    alpha_c = mu_c * exp(B0_prec);
-    beta_c = (1 - mu_c) * exp(B0_prec);
+    alpha_c = mu_c .* prec_c;
+    beta_c = (1 - mu_c) .* prec_c;
 }
 
 
@@ -154,23 +175,36 @@ model {
     // RANDOM EFFECTS PRIORS
     //
 
-    // priors for the Cholesky factorization of
-    // covariance matrices for by-verb and by-scenario
-    // random effects
-    to_vector(z_B_s) ~ std_normal();
-    L_Omega_B_s ~ lkj_corr_cholesky(1);
+    // by-participant random intercepts for precision
+    B0_p ~ normal(0, B0p_sigma);
+    B0p_sigma ~ exponential(1);
 
+    // by-scenario random intercepts for mean
+    B0_s ~ normal(0, B0s_sigma);
+    B0s_sigma ~ exponential(1);
+
+    // priors for the Cholesky factorization of
+    // covariance matrices for by-verb and by-participant
     to_vector(z_B_v) ~ std_normal();
     L_Omega_B_v ~ lkj_corr_cholesky(1);
+
+    to_vector(z_B_p) ~ std_normal();
+    L_Omega_B_p ~ lkj_corr_cholesky(1);
 }
 
 generated quantities {
-    // covariance matrices for by-scenario and by-verb random effects
-    cov_matrix[N_polarity_tense, N_polarity_tense] Sigma_B_v;
-    cov_matrix[N_polarity_tense, N_polarity_tense] Sigma_B_s;
+    // log likelihoods (needed for WAIC/PSIS calculations)
+    vector[N_norming] ll_n;
+    vector[N_contentful] ll_c;
+    vector[N_templatic] ll_t;
+    vector[N_norming + N_contentful + N_templatic] ll_all;
+
+    // covariance matrices for by-verb and by-participant random effects
+    cov_matrix[N_polarity_tense] Sigma_B_v;
+    cov_matrix[N_polarity_tense] Sigma_B_p;
 
     // means, sds of beta parameters
-    // (both alphas + betas and means)
+    // (both alphas + betas and means, precisions)
     real alpha_n_mean;
     real beta_n_mean;
     real alpha_c_mean;
@@ -179,8 +213,11 @@ generated quantities {
     real beta_t_mean;
 
     real mu_n_mean;
+    real prec_n_mean;
     real mu_t_mean;
+    real prec_t_mean;
     real mu_c_mean;
+    real prec_c_mean;
 
     real alpha_n_sd;
     real beta_n_sd;
@@ -190,11 +227,14 @@ generated quantities {
     real beta_t_sd;
 
     real mu_n_sd;
+    real prec_n_sd;
     real mu_c_sd;
+    real prec_c_sd;
     real mu_t_sd;
+    real prec_t_sd;
 
     Sigma_B_v = diag_pre_multiply(tau_B_v, L_Omega_B_v) * diag_pre_multiply(tau_B_v, L_Omega_B_v)';
-    Sigma_B_s = diag_pre_multiply(tau_B_s, L_Omega_B_s) * diag_pre_multiply(tau_B_s, L_Omega_B_s)';
+    Sigma_B_p = diag_pre_multiply(tau_B_p, L_Omega_B_p) * diag_pre_multiply(tau_B_p, L_Omega_B_p)';
 
     alpha_n_mean = mean(alpha_n);
     beta_n_mean = mean(beta_n);
@@ -211,10 +251,27 @@ generated quantities {
     beta_t_sd = sd(beta_t);
 
     mu_n_mean = mean(mu_n);
+    prec_n_mean = mean(prec_n);
     mu_c_mean = mean(mu_c);
+    prec_c_mean = mean(prec_c);
     mu_t_mean = mean(mu_t);
+    prec_t_mean = mean(prec_t);
 
     mu_n_sd = sd(mu_n);
+    prec_n_sd = sd(prec_n);
     mu_c_sd = sd(mu_c);
+    prec_c_sd = sd(prec_c);
     mu_t_sd = sd(mu_t);
+    prec_t_sd = sd(prec_t);
+
+    for (i in 1:N_norming) {
+        ll_n[i] = beta_lpdf(y_n[i] | alpha_n[i], beta_n[i]);
+    }
+    for (i in 1:N_contentful) {
+        ll_c[i] = beta_lpdf(y_c[i] | alpha_c[i], beta_c[i]);
+    }
+    for (i in 1:N_templatic) {
+        ll_t[i] = beta_lpdf(y_t[i] | alpha_t[i], beta_t[i]);
+    }
+    ll_all = append_row(ll_n, append_row(ll_c, ll_t));
 }
