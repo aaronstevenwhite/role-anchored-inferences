@@ -2,13 +2,13 @@
 # 
 
 # MegaIntensionality CSVs after preprocessing
-w_n <- read.csv("want_norming.csv");
-w_t <- read.csv("want_templatic.csv");
-w_c <- read.csv("want_contentful.csv");
+w_n <- read.csv("/home/wgantt/role-anchored-inferences/want_norming.csv");
+w_t <- read.csv("/home/wgantt/role-anchored-inferences/want_templatic.csv");
+w_c <- read.csv("/home/wgantt/role-anchored-inferences/want_contentful.csv");
 
-b_n <- read.csv("believe_norming.csv");
-b_t <- read.csv("believe_templatic.csv");
-b_c <- read.csv("believe_contentful.csv");
+b_n <- read.csv("/home/wgantt/role-anchored-inferences/believe_norming.csv");
+b_t <- read.csv("/home/wgantt/role-anchored-inferences/believe_templatic.csv");
+b_c <- read.csv("/home/wgantt/role-anchored-inferences/believe_contentful.csv");
 
 # Global data
 N_verb <- length(unique(w_n$verb));
@@ -110,36 +110,3 @@ data.b <- list(
   polarity_tense_mat_c=polarity_tense_mat_c.b,
   participant_c=participant_c.b
 );
-
-
-# Load RStan
-library(rstan);
-library(loo);
-options(mc.cores = parallel::detectCores());
-rstan_options(auto_write = TRUE);
-
-# Fit the model
-model_name <- "model.participant.stan";
-# model_name <- "model.participant.scenario.int.stan";
-data <- data.w # / data.b
-fit <- stan(file = model_name,
-            data = data.w,
-            open_progress = TRUE,
-            refresh = 20,
-            verbose = TRUE,
-            diagnostic_file = paste(model_name, ".desire.diagnostic", sep=""),
-            seed = 1337,
-            iter = 12000
-);
-
-# Extract draws from the posterior
-# Also extracts generated quantities
-# list_of_draws <- extract(fit)
-
-# Extract the pointwise log-likelihood
-ll_all <- extract_log_lik(fit, parameter_name = "ll_all");
-
-# Compute WAIC
-fit.waic <- waic(ll_all);
-
-# TODO: compute dataset-specific WAIC
