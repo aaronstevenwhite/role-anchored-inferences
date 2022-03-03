@@ -11,9 +11,8 @@
 # Mac
 .DS_Store
 
-# Only code to *generate* CSVs should be under version control;
-# not the CSVs themselves
-*.csv
+# All CSVs containing model samples
+*-samples.csv
 
 # Unzipped MegaIntensionality datasets
 mega-intensionality-norming-v1/
