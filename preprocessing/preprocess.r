@@ -2,13 +2,14 @@
 # 
 
 # MegaIntensionality CSVs after preprocessing
-w_n <- read.csv("/home/wgantt/role-anchored-inferences/want_norming.csv");
-w_t <- read.csv("/home/wgantt/role-anchored-inferences/want_templatic.csv");
-w_c <- read.csv("/home/wgantt/role-anchored-inferences/want_contentful.csv");
+# NOTE: you will need to change these paths
+w_n <- read.csv("/home/wgantt/role-anchored-inferences/data/preprocessed/want_norming.csv");
+w_t <- read.csv("/home/wgantt/role-anchored-inferences/data/preprocessed/want_templatic.csv");
+w_c <- read.csv("/home/wgantt/role-anchored-inferences/data/preprocessed/want_contentful.csv");
 
-b_n <- read.csv("/home/wgantt/role-anchored-inferences/believe_norming.csv");
-b_t <- read.csv("/home/wgantt/role-anchored-inferences/believe_templatic.csv");
-b_c <- read.csv("/home/wgantt/role-anchored-inferences/believe_contentful.csv");
+b_n <- read.csv("/home/wgantt/role-anchored-inferences/data/preprocessed/believe_norming.csv");
+b_t <- read.csv("/home/wgantt/role-anchored-inferences/data/preprocessed/believe_templatic.csv");
+b_c <- read.csv("/home/wgantt/role-anchored-inferences/data/preprocessed/believe_contentful.csv");
 
 # Global data
 N_verb <- length(unique(w_n$verb));
