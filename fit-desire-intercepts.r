@@ -20,7 +20,7 @@ DIAGNOSTIC_FILE_PATH <- paste(MODEL_NAME, "desire.diagnostic", sep=".");
 source(PREPROCESS_SCRIPT);
 
 # Fit the model
-data <- data.b
+data <- data.w
 fit <- stan(file = MODEL_NAME,
             data = data,
             open_progress = TRUE,
