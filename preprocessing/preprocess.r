@@ -36,14 +36,14 @@ y_t.w <- w_t$response;
 verb_t.w <- as.integer(as.factor(w_t$verb));
 w_t$polarity.tense <- relevel(interaction(w_t$polarity, w_t$tense), ref="positive.past");
 polarity_tense_t.w <- as.integer(w_t$polarity.tense);
-polarity_tense_mat_t.w <- model.matrix(~ 1 + polarity.tense, data=w_t);
+polarity_tense_mat_t.w <- model.matrix(~ 1 + polarity*tense, data=w_t);
 participant_t.w <- as.integer(as.factor(w_t$participant));
 
 y_t.b <- b_t$response;
 verb_t.b <- as.integer(as.factor(b_t$verb));
 b_t$polarity.tense <- relevel(interaction(b_t$polarity, b_t$tense), ref="positive.past");
 polarity_tense_t.b <- as.integer(b_t$polarity.tense);
-polarity_tense_mat_t.b <- model.matrix(~ 1 + polarity.tense, data=b_t);
+polarity_tense_mat_t.b <- model.matrix(~ 1 + polarity*tense, data=b_t);
 participant_t.b <- as.integer(as.factor(b_t$participant));
 
 
@@ -53,7 +53,7 @@ scenario_c.w <- as.integer(as.factor(w_c$scenario));
 verb_c.w <- as.integer(as.factor(w_c$verb));
 w_c$polarity.tense <- relevel(interaction(w_c$polarity, w_c$tense), ref="positive.past");
 polarity_tense_c.w <- as.integer(w_c$polarity.tense);
-polarity_tense_mat_c.w <- model.matrix(~ 1 + polarity.tense, data=w_c);
+polarity_tense_mat_c.w <- model.matrix(~ 1 + polarity*tense, data=w_c);
 participant_c.w <- as.integer(as.factor(w_c$participant));
 
 y_c.b <- b_c$response;
@@ -61,7 +61,7 @@ scenario_c.b <- as.integer(as.factor(b_c$scenario));
 verb_c.b <- as.integer(as.factor(b_c$verb));
 b_c$polarity.tense <- relevel(interaction(b_c$polarity, b_c$tense), ref="positive.past");
 polarity_tense_c.b <- as.integer(b_c$polarity.tense);
-polarity_tense_mat_c.b <- model.matrix(~ 1 + polarity.tense, data=b_c);
+polarity_tense_mat_c.b <- model.matrix(~ 1 + polarity*tense, data=b_c);
 participant_c.b <- as.integer(as.factor(b_c$participant));
 
 data.w <- list(

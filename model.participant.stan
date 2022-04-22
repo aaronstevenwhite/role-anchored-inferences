@@ -17,7 +17,6 @@ data {
     int<lower=1> N_templatic;
     vector[N_templatic] y_t;
     int<lower=1, upper=N_verb> verb_t[N_templatic];
-    int<lower=1, upper=N_polarity_tense> polarity_tense_t[N_templatic];
     matrix<lower=0, upper=1>[N_templatic, N_polarity_tense] polarity_tense_mat_t;
     int<lower=1, upper=N_participant> participant_t[N_templatic];
     
@@ -26,7 +25,6 @@ data {
     vector[N_contentful] y_c;
     int<lower=1, upper=N_scenario> scenario_c[N_contentful];
     int<lower=1, upper=N_verb> verb_c[N_contentful];
-    int<lower=1, upper=N_polarity_tense> polarity_tense_c[N_contentful];
     matrix<lower=0, upper=1>[N_contentful, N_polarity_tense] polarity_tense_mat_c;
     int<lower=1, upper=N_participant> participant_c[N_contentful];
 }
@@ -130,7 +128,7 @@ transformed parameters {
     for (i in 1:N_templatic) {
         // - polarity*tense fixed effects
         // - by-verb random intercepts + slopes for polarity*tense
-        mu_t[i] = inv_logit(B_pt_mu[polarity_tense_t[i]] + 
+        mu_t[i] = inv_logit(polarity_tense_mat_t[i, ] * B_pt_mu + 
                             polarity_tense_mat_t[i, ] * B_v[, verb_t[i]] +
                             polarity_tense_mat_t[i, ] * B_p[, participant_t[i]]);
         prec_t[i] = exp(B0_prec + B0_p[participant_t[i]]);
@@ -145,7 +143,8 @@ transformed parameters {
         // - polarity*tense fixed effects
         // - by-verb random intercepts + slopes for polarity*tense
         // - by-scenario random intercepts, slopes for polarity*tense
-        mu_c[i] = inv_logit(B_pt_mu[polarity_tense_c[i]] + 
+        // - by-participant random intercepts, slopes for polarity*tense
+        mu_c[i] = inv_logit(polarity_tense_mat_c[i, ] * B_pt_mu + 
                             polarity_tense_mat_c[i, ] * B_v[, verb_c[i]] + 
                             polarity_tense_mat_c[i, ] * B_s[, scenario_c[i]] + 
                             polarity_tense_mat_c[i, ] * B_p[, participant_c[i]]);
