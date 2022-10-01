@@ -16,9 +16,11 @@ The general preprocessing and model fitting workflow is as follows:
 4. Inside the script you have chosen, you will need to modify the variables for the paths to (1) your local copy of this repo (`REPO_PATH`), and (2) the path to the directory where you want the model to be saved (`OUTPUT_PATH`). Ideally, these would be command line arguments, but they are not right now.
 5. Assuming you are running the R terminal from the root of the repository, run `source(<model_script>)`, where `<model_script>` is the R script for fitting the model you selected in step 2. Note that this will handle all further preprocessing, assuming you have run (1). Each of these scripts will save pointwise log likelihood estimates for all observations from the norming data, as well as from the contentful and templatic validation data. They also compute WAIC for the fit across all three datasets on the basis of these log likelihoods. Any further analysis you must do yourself, after the model has been fit.
 
-## Saved models
+## Saved models and samples
 
 If you are working on the FACTSlab machines, you can find the latest model fits in `/data/wgantt/mi/stan_models/{belief,desire}/random-{slopes,intercepts}-index-code/`. These are *very large* files and take a non-trivial amount of time to load. This can be done with the [`readRDS`](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/readRDS) function (e.g. `saved_fit <- readRDS('/path/to/saved/fit.rds'`)>).
+
+For each model, I have also saved the likelihood estimates for each example in the norming, contentful, and templatic data across all (post-warmup) posterior samples (merged across chains) in gzipped archives in these same directories. Each archive contains one CSV per dataset (norming, contentful, templatic). These too are large files (the contentful and templatic CSVs are about 1.6G each when extracted), since these models all had 20,000 post-warmup draws, and there is a column for each draw, for each example. These CSVs were created using `postprocessing/dump_likelihoods.r`.
 
 ## Other Notes
 
